@@ -94,7 +94,6 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
     private long mWindowAnimationStartTime;
     private boolean mCallUiHiddenBeforeNextReload;
 
-    private Button mRecentsKillAllButton;
     private Button mGoogleNowButton;
     private LinearColorBar mRamUsageBar;
 
@@ -106,7 +105,6 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
     private int mRecentItemLayoutId;
     private boolean mHighEndGfx;
     boolean ramBarEnabled;
-    boolean mRecentsKillAllEnabled;
     boolean mRecentsGoogEnabled;
 
     TextView mBackgroundProcessText;
@@ -124,6 +122,7 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
     }
 
     private RecentsActivity mRecentsActivity;
+    private ImageView mClearRecents;
 
     public static interface RecentsScrollView {
         public int numItemsInOneScreenful();
@@ -394,7 +393,7 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
                     && (mRecentTaskDescriptions.size() == 0);
             mRecentsNoApps.setAlpha(1f);
             mRecentsNoApps.setVisibility(noApps ? View.VISIBLE : View.INVISIBLE);
-
+            mClearRecents.setVisibility(noApps ? View.GONE : View.VISIBLE);
             onAnimationEnd(null);
             setFocusable(true);
             setFocusableInTouchMode(true);
@@ -508,6 +507,16 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         mRecentsScrim = findViewById(R.id.recents_bg_protect);
         mRecentsNoApps = findViewById(R.id.recents_no_apps);
 
+        mClearRecents = (ImageView) findViewById(R.id.recents_clear);
+        if (mClearRecents != null){
+            mClearRecents.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mRecentsContainer.removeAllViewsInLayout();
+                }
+            });
+        }
+
         if (mRecentsScrim != null) {
             mHighEndGfx = ActivityManager.isHighEndGfx();
             if (!mHighEndGfx) {
@@ -521,13 +530,6 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         mRamUsageBar = (LinearColorBar) findViewById(R.id.ram_usage_bar);
         mForegroundProcessText = (TextView) findViewById(R.id.foregroundText);
         mBackgroundProcessText = (TextView) findViewById(R.id.backgroundText);
-        mRecentsKillAllButton = (Button) findViewById(R.id.recents_kill_all_button);
-        mRecentsKillAllButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                killAllRecentApps();
-            }
-        });
         mGoogleNowButton = (Button) findViewById(R.id.recents_google_now_button);
         mGoogleNowButton.setOnClickListener(new OnClickListener() {
             @Override
@@ -955,20 +957,12 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         ramBarEnabled = Settings.System.getBoolean(mContext.getContentResolver(),
                 Settings.System.RAM_USAGE_BAR, false);
 
-        mRecentsKillAllEnabled = Settings.System.getBoolean(
-                mContext.getContentResolver(),
-                Settings.System.RECENT_KILL_ALL_BUTTON, false);
-
         mRecentsGoogEnabled = Settings.System.getBoolean(
                 mContext.getContentResolver(),
                 Settings.System.RECENT_GOOGLE_ASSIST, false);
 
         if (mRamUsageBar != null) {
             mRamUsageBar.setVisibility(ramBarEnabled ? View.VISIBLE : View.GONE);
-        }
-
-        if (mRecentsKillAllButton != null) {
-            mRecentsKillAllButton.setVisibility(mRecentsKillAllEnabled ? View.VISIBLE : View.GONE);
         }
 
         if (mGoogleNowButton != null) {

@@ -62,6 +62,7 @@
 
         </com.android.systemui.recent.RecentsVerticalScrollView>
 
+<<<<<<< HEAD
         <Button android:id="@+id/recents_kill_all_button"
             android:layout_gravity="bottom|left"
             android:layout_marginTop="5dp"
@@ -116,6 +117,16 @@
             android:textColor="#000"
             android:singleLine="true" />
     </view>
+=======
+        <ImageView
+            android:id="@+id/recents_clear"
+            android:clickable="true"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:scaleType="center"
+            android:layout_gravity="bottom|left"
+            android:src="@drawable/ic_notify_clear" />
+>>>>>>> 9b62b87... "Clear all" button on recent apps
 
         <include layout="@layout/system_bar_no_recent_apps"
             android:id="@+id/recents_no_apps"
