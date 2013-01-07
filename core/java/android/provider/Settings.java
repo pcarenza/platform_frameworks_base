@@ -4354,6 +4354,13 @@ public final class Settings {
          * Use alternative application resolver
          */
         public static final String ACTIVITY_RESOLVER_USE_ALT = "activity_resolver_use_alt";
+        
+        /**
+         * whether to hide the Ram Usage Bar on recent switcher
+         *
+         * @hide
+         */
+        public static final String RECENTS_RAM_BAR = "recents_ram_bar";
 
         /**
          * Swap volume buttons when the screen is rotated by 90 or 180 degrees
