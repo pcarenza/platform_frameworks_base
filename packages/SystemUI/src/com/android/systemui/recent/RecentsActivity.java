@@ -155,6 +155,9 @@ private static ArrayList<NavigationCallback>sNavigationCallbacks
         }
         mShowing = true;
         if (mRecentsPanel != null) {
+            // Call and refresh the recent tasks list in case we didn't preload tasks
+            // or in case we don't get an onNewIntent
+            mRecentsPanel.refreshRecentTasksList();
             mRecentsPanel.refreshViews();
         }
         super.onStart();
@@ -211,6 +214,7 @@ private static ArrayList<NavigationCallback>sNavigationCallbacks
         setContentView(R.layout.status_bar_recent_panel);
         mRecentsPanel = (RecentsPanelView) findViewById(R.id.recents_root);
         mRecentsPanel.setOnTouchListener(new TouchOutsideListener(mRecentsPanel));
+        mRecentsPanel.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
 
         final RecentTasksLoader recentTasksLoader = RecentTasksLoader.getInstance(this);
         recentTasksLoader.setRecentsPanel(mRecentsPanel, mRecentsPanel);

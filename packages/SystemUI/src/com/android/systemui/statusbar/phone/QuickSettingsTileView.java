@@ -20,6 +20,8 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.widget.RelativeLayout;
+import android.view.View;
+import android.widget.FrameLayout;
 
 /**
  *
@@ -28,7 +30,6 @@ public class QuickSettingsTileView extends RelativeLayout {
 
     private int mColSpan;
     private int mRowSpan;
-    private int mCellWidth;
 
     public QuickSettingsTileView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -47,5 +48,20 @@ public class QuickSettingsTileView extends RelativeLayout {
 
     public void setContent(int layoutId, LayoutInflater inflater) {
         inflater.inflate(layoutId, this);
+    }
+
+    @Override
+    public void setVisibility(int vis) {
+        if (QuickSettings.DEBUG_GONE_TILES) {
+            if (vis == View.GONE) {
+                vis = View.VISIBLE;
+                setAlpha(0.25f);
+                setEnabled(false);
+            } else {
+                setAlpha(1f);
+                setEnabled(true);
+            }
+        }
+        super.setVisibility(vis);
     }
 }
