@@ -175,7 +175,7 @@ public interface Operation {
 
     DataOutputStream openDataOutputStream() throws IOException;
  
-    void close() throws IoException;
+    void close() throws IOException;
 
     void noEndofBody();
 

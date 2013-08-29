@@ -244,7 +244,6 @@ public class DefaultContainerService extends IntentService {
          * List content of the directory and return as marshalled Parcel.
          * Used for calculating misc size in Settings -> Storage
          */
-        @Override
         public byte[] listDirectory(String path) throws RemoteException {
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 
@@ -301,7 +300,6 @@ public class DefaultContainerService extends IntentService {
         }
 
         // Same as clearDirectory, but also work for files
-        @Override
         public void deleteFile(String path) throws RemoteException {
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 

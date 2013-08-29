@@ -505,7 +505,6 @@ public class Tethering extends INetworkManagementEventObserver.Stub {
                 tethered_notification_message);
 
         if (mTetheredNotification == null) {
-         if (mTetheredNotification == null) {
             Notification.Builder builder = new Notification.Builder(mContext)
                     .setSmallIcon(icon)
                     .setContentTitle(title)

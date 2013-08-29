@@ -226,9 +226,10 @@ public class GestureRecorder {
     }
 
     public void save() {
+	BufferedWriter w = null;
         synchronized (mGestures) {
             try {
-                BufferedWriter w = new BufferedWriter(new FileWriter(mLogfile, /*append=*/ true));
+                w = new BufferedWriter(new FileWriter(mLogfile, /*append=*/ true));
                 w.append(toJsonLocked() + "\n");
                 w.close();
                 mGestures.clear();

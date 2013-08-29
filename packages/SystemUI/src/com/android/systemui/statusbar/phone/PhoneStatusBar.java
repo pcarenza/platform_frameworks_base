@@ -883,7 +883,6 @@ public class PhoneStatusBar extends BaseStatusBar {
             (android.view.WindowManager.LayoutParams) mNavigationBarView.getLayoutParams();
         lp.flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
         mWindowManager.updateViewLayout(mNavigationBarView, lp);
-        }
     }
 
     @Override
@@ -3028,6 +3027,7 @@ public class PhoneStatusBar extends BaseStatusBar {
             mContext.getResources().getConfiguration().uiInvertedMode;
 
         // detect theme change.
+        CustomTheme newTheme = res.getConfiguration().customTheme;
         if ((newTheme != null &&
                 (mCurrentTheme == null || !mCurrentTheme.equals(newTheme)))
             || uiInvertedMode != mCurrUiInvertedMode) {

@@ -39,6 +39,7 @@ public class GestureCatcherView extends LinearLayout{
     private boolean mSwapXY = false;
     private boolean mNavBarSwipeStarted = false;
     private int mScreenWidth, mScreenHeight;
+    private SettingsObserver settingsObserver;
 
     private BaseStatusBar mBar;
 
@@ -59,7 +60,7 @@ public class GestureCatcherView extends LinearLayout{
         mScreenHeight = size.x;
         mScreenWidth = size.y;
 
-        SettingsObserver settingsObserver = new SettingsObserver(new Handler());
+        settingsObserver = new SettingsObserver(new Handler());
         settingsObserver.observe();
         updateSettings();
 
@@ -119,13 +120,13 @@ public class GestureCatcherView extends LinearLayout{
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        mSettingsObserver.observe();
+        settingsObserver.observe();
         updateSettings();
     }
 
     @Override
     protected void onDetachedFromWindow() {
-        mContext.getContentResolver().unregisterContentObserver(mSettingsObserver);
+        mContext.getContentResolver().unregisterContentObserver(settingsObserver);
         super.onDetachedFromWindow();
     }
 

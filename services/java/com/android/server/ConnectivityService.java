@@ -385,9 +385,6 @@ public class ConnectivityService extends IConnectivityManager.Stub {
 
     TelephonyManager mTelephonyManager;
 
-    // We only want one checkMobileProvisioning after booting.
-    volatile boolean mFirstProvisioningCheckStarted = false;
-
     public ConnectivityService(Context context, INetworkManagementService netd,
             INetworkStatsService statsService, INetworkPolicyManager policyManager) {
         // Currently, omitting a NetworkFactory will create one internally
@@ -1289,8 +1286,10 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                                 feature);
                     }
                     if (network.reconnect()) {
+                        if (DBG) log("startUsingNetworkFeature X: return APN_REQUEST_STARTED");
                         return PhoneConstants.APN_REQUEST_STARTED;
                     } else {
+                        if (DBG) log("startUsingNetworkFeature X: return APN_REQUEST_FAILED");
                         return PhoneConstants.APN_REQUEST_FAILED;
                     }
                 } else {
@@ -1302,9 +1301,11 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                             mNetRequestersPids[usedNetworkType].add(currentPid);
                         }
                     }
+                    if (DBG) log("startUsingNetworkFeature X: return -1 unsupported feature.");
                     return -1;
                 }
             }
+            if (DBG) log("startUsingNetworkFeature X: return APN_TYPE_NOT_AVAILABLE");
             return PhoneConstants.APN_TYPE_NOT_AVAILABLE;
          } finally {
             if (DBG) {
@@ -1338,11 +1339,12 @@ public class ConnectivityService extends IConnectivityManager.Stub {
             }
         }
         if (found && u != null) {
+            if (VDBG) log("stopUsingNetworkFeature: X");
             // stop regardless of how many other time this proc had called start
             return stopUsingNetworkFeature(u, true);
         } else {
             // none found!
-            if (VDBG) log("stopUsingNetworkFeature - not a live request, ignoring");
+            if (VDBG) log("stopUsingNetworkFeature: X not a live request, ignoring");
             return 1;
         }
     }
@@ -1897,6 +1899,9 @@ public class ConnectivityService extends IConnectivityManager.Stub {
          */
         if (mNetConfigs[prevNetType].isDefault()) {
             if (mActiveDefaultNetwork == prevNetType) {
+                if (DBG) {
+                    log("tryFailover: set mActiveDefaultNetwork=-1, prevNetType=" + prevNetType);
+                }
                 mActiveDefaultNetwork = -1;
             }
 
@@ -2122,10 +2127,11 @@ public class ConnectivityService extends IConnectivityManager.Stub {
     };
 
     private boolean isNewNetTypePreferredOverCurrentNetType(int type) {
-        if ((type != mNetworkPreference &&
-                    mNetConfigs[mActiveDefaultNetwork].priority >
-                    mNetConfigs[type].priority) ||
-                mNetworkPreference == mActiveDefaultNetwork) return false;
+        if (((type != mNetworkPreference)
+                      && (mNetConfigs[mActiveDefaultNetwork].priority > mNetConfigs[type].priority))
+                   || (mNetworkPreference == mActiveDefaultNetwork)) {
+            return false;
+        }
         return true;
     }
 
@@ -2138,6 +2144,11 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         boolean isFailover = info.isFailover();
         final NetworkStateTracker thisNet = mNetTrackers[newNetType];
         final String thisIface = thisNet.getLinkProperties().getInterfaceName();
+
+        if (VDBG) {
+            log("handleConnect: E newNetType=" + newNetType + " thisIface=" + thisIface
+                    + " isFailover" + isFailover);
+        }
 
         // if this is a default net and other default is running
         // kill the one not preferred
@@ -2300,6 +2311,10 @@ public class ConnectivityService extends IConnectivityManager.Stub {
      */
     private void handleConnectivityChange(int netType, boolean doReset) {
         int resetMask = doReset ? NetworkUtils.RESET_ALL_ADDRESSES : 0;
+        if (VDBG) {
+            log("handleConnectivityChange: netType=" + netType + " doReset=" + doReset
+                    + " resetMask=" + resetMask);
+        }
 
         /*
          * If a non-default network is enabled, add the host routes that
@@ -2367,7 +2382,9 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         boolean resetDns = updateRoutes(newLp, curLp, mNetConfigs[netType].isDefault());
 
         if (resetMask != 0 || resetDns) {
+            if (VDBG) log("handleConnectivityChange: resetting");
             if (curLp != null) {
+                if (VDBG) log("handleConnectivityChange: resetting curLp=" + curLp);
                 for (String iface : curLp.getAllInterfaceNames()) {
                     if (TextUtils.isEmpty(iface) == false) {
                         if (resetMask != 0) {
@@ -2400,6 +2417,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         // Update 464xlat state.
         NetworkStateTracker tracker = mNetTrackers[netType];
         if (mClat.requiresClat(netType, tracker)) {
+
             // If the connection was previously using clat, but is not using it now, stop the clat
             // daemon. Normally, this happens automatically when the connection disconnects, but if
             // the disconnect is not reported, or if the connection's LinkProperties changed for
@@ -2453,6 +2471,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
 
         for (RouteInfo r : routeDiff.removed) {
             if (isLinkDefault || ! r.isDefaultRoute()) {
+                if (VDBG) log("updateRoutes: default remove route r=" + r);
                 removeRoute(curLp, r, TO_DEFAULT_TABLE);
             }
             if (isLinkDefault == false) {
@@ -2497,7 +2516,6 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                 // remove the default route unless somebody else has asked for it
                 String ifaceName = newLp.getInterfaceName();
                 if (TextUtils.isEmpty(ifaceName) == false && mAddedRoutes.contains(r) == false) {
-                    if (VDBG) log("Removing " + r + " for interface " + ifaceName);
                     try {
                         mNetd.removeRoute(ifaceName, r);
                     } catch (Exception e) {
@@ -2789,11 +2807,10 @@ public class ConnectivityService extends IConnectivityManager.Stub {
             switch (msg.what) {
                 case NetworkStateTracker.EVENT_STATE_CHANGED: {
                     info = (NetworkInfo) msg.obj;
-                    int type = info.getType();
                     NetworkInfo.State state = info.getState();
 
                     if (VDBG || (state == NetworkInfo.State.CONNECTED) ||
-                            (state == NetworkInfo.State.DISCONNECTED)) ||
+                            (state == NetworkInfo.State.DISCONNECTED) ||
 			    (state == NetworkInfo.State.SUSPENDED)) {
                         log("ConnectivityChange for " +
                             info.getTypeName() + ": " +
@@ -3762,13 +3779,12 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                 }
                 mIsCheckingMobileProvisioning.set(false);
                 return timeOutMs;
-
             }
+
             CheckMp checkMp = new CheckMp(mContext, this);
             CheckMp.CallBack cb = new CheckMp.CallBack() {
                 @Override
                 void onComplete(Integer result) {
-                    }
                     NetworkInfo ni =
                             mNetTrackers[ConnectivityManager.TYPE_MOBILE_HIPRI].getNetworkInfo();
                     switch(result) {
@@ -3777,6 +3793,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                             if (DBG) log("CheckMp.onComplete: ignore, connected or no connection");
                             break;
                         }
+			case CMP_RESULT_CODE_REDIRECTED: {
                             String url = getMobileProvisioningUrl();
                             if (TextUtils.isEmpty(url)) {
                                 url = getMobileRedirectedProvisioningUrl();
@@ -3785,7 +3802,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                                 setProvNotificationVisible(true, ni.getType(), ni.getExtraInfo(),
 					url);
                             } else {
-                                log("CheckMp.onComplete: warm sim (redirected), no url");
+                                if (DBG) log("CheckMp.onComplete: warm (redirected), no url");
                             }
                             break;
                         }
@@ -3794,10 +3811,10 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                             String url = getMobileProvisioningUrl();
                             if (TextUtils.isEmpty(url) == false) {
                                 log("CheckMp.onComplete: warm sim (no dns/tcp), url=" + url);
-                                setProfNotificationVisible(true, ni.getType(), ni.getExtraInfo(),
+                                setProvNotificationVisible(true, ni.getType(), ni.getExtraInfo(),
 					 url);
                             } else {
-                                log("CheckMp.onComplete: warm sim (no dns/tcp), no url");
+                                if (DBG) log("CheckMp.onComplete: warm (no dns/tcp), no url");
                             }
                             break;
                         }
@@ -3815,7 +3832,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
             checkMp.execute(params);
         } finally {
             Binder.restoreCallingIdentity(token);
-            log("checkMobileProvisioning: X");
+            if (DBG) log("checkMobileProvisioning: X");
         }
         return timeOutMs;
     }
@@ -4231,7 +4248,6 @@ public class ConnectivityService extends IConnectivityManager.Stub {
 	    Notification notification = new Notification();
             switch (networkType) {
                 case ConnectivityManager.TYPE_WIFI:
-                    log("setNotificationVisible: TYPE_WIFI");
                     title = r.getString(R.string.wifi_available_sign_in, 0);
                     details = r.getString(R.string.network_available_sign_in_detailed,
                             extraInfo);
@@ -4243,20 +4259,17 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                     break;
                 case ConnectivityManager.TYPE_MOBILE:
                 case ConnectivityManager.TYPE_MOBILE_HIPRI:
-                    log("setNotificationVisible: TYPE_MOBILE|HIPRI");
                     title = r.getString(R.string.network_available_sign_in, 0);
                     // TODO: Change this to pull from NetworkInfo once a printable
                     // name has been added to it
                     details = mTelephonyManager.getNetworkOperatorName();
                     icon = R.drawable.stat_notify_rssi_in_range;
-                     icon = R.drawable.stat_notify_rssi_in_range;
                     intent = new Intent(CONNECTED_TO_PROVISIONING_NETWORK_ACTION);
                     intent.putExtra("EXTRA_URL", url);
                     intent.setFlags(0);
                     notification.contentIntent = PendingIntent.getBroadcast(mContext, 0, intent, 0);
                     break;
                 default:
-                    log("setNotificationVisible: other type=" + networkInfo.getType());
                     title = r.getString(R.string.network_available_sign_in, 0);
                     details = r.getString(R.string.network_available_sign_in_detailed,
                             extraInfo);
@@ -4423,4 +4436,5 @@ public class ConnectivityService extends IConnectivityManager.Stub {
 
         return url;
     }
+
 }

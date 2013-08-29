@@ -52,7 +52,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MobileDataStateTracker implements NetworkStateTracker {
 
     private static final String TAG = "MobileDataStateTracker";
-    private static final boolean DBG = false;
+    private static final boolean DBG = true;
     private static final boolean VDBG = false;
 
     private PhoneConstants.DataState mMobileDataState;
@@ -207,21 +207,19 @@ public class MobileDataStateTracker implements NetworkStateTracker {
                 // Make us in the connecting state until we make a new TYPE_MOBILE_PROVISIONING
                 mMobileDataState = PhoneConstants.DataState.CONNECTING;
                 updateLinkProperitesAndCapatilities(intent);
-                mNetworkInfo.setIsConnectedToProvisioningNetwork(true);
-
+ 		mNetworkInfo.setIsConnectedToProvisioningNetwork(true);
                 // Change state to SUSPENDED so setDetailedState
                 // sends EVENT_STATE_CHANGED to connectivityService
                 setDetailedState(DetailedState.SUSPENDED, "", apnName);
+
             } else if (intent.getAction().equals(TelephonyIntents.
                     ACTION_ANY_DATA_CONNECTION_STATE_CHANGED)) {
                 String apnType = intent.getStringExtra(PhoneConstants.DATA_APN_TYPE_KEY);
-                if (VDBG) {
-                    log(String.format("Broadcast received: ACTION_ANY_DATA_CONNECTION_STATE_CHANGED"
-                        + "mApnType=%s %s received apnType=%s", mApnType,
-                        TextUtils.equals(apnType, mApnType) ? "==" : "!=", apnType));
-                }
                 if (!TextUtils.equals(apnType, mApnType)) {
                     return;
+                }
+                if (DBG) {
+                    log("Broadcast received: " + intent.getAction() + " apnType=" + apnType);
                 }
 
                 int oldSubtype = mNetworkInfo.getSubtype();
@@ -240,7 +238,7 @@ public class MobileDataStateTracker implements NetworkStateTracker {
                 String apnName = intent.getStringExtra(PhoneConstants.DATA_APN_KEY);
                 mNetworkInfo.setRoaming(intent.getBooleanExtra(
                         PhoneConstants.DATA_NETWORK_ROAMING_KEY, false));
-                if (VDBG) {
+                if (DBG) {
                     log(mApnType + " setting isAvailable to " +
                             intent.getBooleanExtra(PhoneConstants.NETWORK_UNAVAILABLE_KEY,false));
                 }
@@ -299,18 +297,13 @@ public class MobileDataStateTracker implements NetworkStateTracker {
                     equals(TelephonyIntents.ACTION_DATA_CONNECTION_FAILED)) {
                 String apnType = intent.getStringExtra(PhoneConstants.DATA_APN_TYPE_KEY);
                 if (!TextUtils.equals(apnType, mApnType)) {
-                    if (DBG) {
-                        log(String.format(
-                                "Broadcast received: ACTION_ANY_DATA_CONNECTION_FAILED ignore, " +
-                                "mApnType=%s != received apnType=%s", mApnType, apnType));
-                    }
                     return;
                 }
                 String reason = intent.getStringExtra(PhoneConstants.FAILURE_REASON_KEY);
                 String apnName = intent.getStringExtra(PhoneConstants.DATA_APN_KEY);
                 if (DBG) {
-                    log("Received " + intent.getAction() +
-                                " broadcast" + reason == null ? "" : "(" + reason + ")");
+                    log("Broadcast received: " + intent.getAction() +
+                                " reason=" + reason == null ? "null" : reason);
                 }
                 setDetailedState(DetailedState.FAILED, reason, apnName);
             } else {
