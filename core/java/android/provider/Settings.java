@@ -6464,6 +6464,9 @@ public final class Settings {
 
         public static final String ENABLE_PERMISSIONS_MANAGEMENT = "enable_permissions_management";
 
+        public static final String PRIVACY_GUARD_DEFAULT = "privacy_guard_default";
+        
+
         /**
          * This are the settings to be backed up.
          *
@@ -6507,7 +6510,8 @@ public final class Settings {
             MOUNT_UMS_NOTIFY_ENABLED,
             UI_NIGHT_MODE,
             UI_INVERTED_MODE,
-            DIALPAD_AUTOCOMPLETE
+            DIALPAD_AUTOCOMPLETE,
+            PRIVACY_GUARD_DEFAULT,
         };
 
         /**

@@ -102,7 +102,6 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
     private long mWindowAnimationStartTime;
     private boolean mCallUiHiddenBeforeNextReload;
 
-    private Button mGoogleNowButton;
     private LinearColorBar mRamUsageBar;
 
     private RecentTasksLoader mRecentTasksLoader;
@@ -113,13 +112,11 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
     private int mRecentItemLayoutId;
     private boolean mHighEndGfx;
     boolean ramBarEnabled;
-    boolean mRecentsGoogEnabled;
 
     TextView mBackgroundProcessText;
     TextView mForegroundProcessText;
 
     Handler mHandler = new Handler();
-    SettingsObserver mSettingsObserver;
     ActivityManager mAm;
     ActivityManager.MemoryInfo mMemInfo;
 
@@ -131,7 +128,6 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
 
     private RecentsActivity mRecentsActivity;
     private ImageView mClearRecents;
-    private LinearColorBar mRamUsageBar;
 
     private long mFreeMemory;
     private long mTotalMemory;
@@ -142,7 +138,6 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
     TextView mFreeMemText;
     TextView mRamText;
 
-    MemInfoReader mMemInfoReader = new MemInfoReader();
 
     public static interface RecentsScrollView {
         public int numItemsInOneScreenful();
@@ -323,12 +318,10 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         mRecentTasksLoader = RecentTasksLoader.getInstance(context);
         mRecentsActivity = (RecentsActivity) context;
         a.recycle();
-        mSettingsObserver = new SettingsObserver(mHandler);
     }
 
     @Override
     protected void onDetachedFromWindow() {
-        mContext.getContentResolver().unregisterContentObserver(mSettingsObserver);
         super.onDetachedFromWindow();
     }
 
@@ -413,6 +406,7 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
                     && (mRecentTaskDescriptions.size() == 0);
             mRecentsNoApps.setAlpha(1f);
             mRecentsNoApps.setVisibility(noApps ? View.VISIBLE : View.INVISIBLE);
+	    if (mClearRecents != null)
             mClearRecents.setVisibility(noApps ? View.GONE : View.VISIBLE);
             onAnimationEnd(null);
             setFocusable(true);
@@ -434,7 +428,6 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         if (root != null) {
             root.setDrawDuringWindowsAnimating(true);
         }
-        mSettingsObserver.observe(); // observe will call updateSettings()
     }
 
     public void onUiHidden() {
@@ -527,7 +520,6 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
 
         mRecentsScrim = findViewById(R.id.recents_bg_protect);
         mRecentsNoApps = findViewById(R.id.recents_no_apps);
-
         mClearRecents = (ImageView) findViewById(R.id.recents_clear);
         if (mClearRecents != null){
             mClearRecents.setOnClickListener(new OnClickListener() {
@@ -564,13 +556,6 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
                 ((BitmapDrawable) mRecentsScrim.getBackground()).setTileModeY(TileMode.REPEAT);
             }
         }
-        mGoogleNowButton = (Button) findViewById(R.id.recents_google_now_button);
-        mGoogleNowButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                AwesomeAction.launchAction(v.getContext(), AwesomeConstant.ACTION_ASSIST.value());
-            }
-        });
         updateRamBar();
     }
 
@@ -921,50 +906,6 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
         popup.show();
     }
 
-    class SettingsObserver extends ContentObserver {
-        SettingsObserver(Handler handler) {
-            super(handler);
-        }
-
-        void observe() {
-            ContentResolver resolver = mContext.getContentResolver();
-            resolver.registerContentObserver(Settings.System
-                    .getUriFor(Settings.System.RECENT_GOOGLE_ASSIST),
-                    false, this);
-            updateSettings();
-        }
-
-        @Override
-        public void onChange(boolean selfChange) {
-            updateSettings();
-        }
-    }
-
-    public void updateSettings() {
-
-        mRecentsGoogEnabled = Settings.System.getBoolean(
-                mContext.getContentResolver(),
-                Settings.System.RECENT_GOOGLE_ASSIST, false);
-
-        if (mGoogleNowButton != null) {
-            mGoogleNowButton.setVisibility(mRecentsGoogEnabled ? View.VISIBLE : View.GONE);
-	}
-    }
-
-    @Override
-    public void onRefreshUi(int what) {
-        switch (what) {
-            case REFRESH_TIME:
-                UpdateRamBar();
-                break;
-            case REFRESH_DATA:
-                UpdateRamBar();
-                break;
-            case REFRESH_STRUCTURE:
-                UpdateRamBar();
-                break;
-        }
-    }
 
     private void updateRamBar() {
         mRamUsageBar = (LinearColorBar) findViewById(R.id.ram_usage_bar);
@@ -1003,10 +944,13 @@ public class RecentsPanelView extends FrameLayout implements OnItemClickListener
             mUsedMemText = (TextView)findViewById(R.id.usedMemText);
             mFreeMemText = (TextView)findViewById(R.id.freeMemText);
             mRamText = (TextView)findViewById(R.id.ramText);
+	    if (mUsedMemText != null)
             mUsedMemText.setText(getResources().getString(
                     R.string.service_used_mem, usedMem + " MB"));
+	    if (mFreeMemText != null)
             mFreeMemText.setText(getResources().getString(
                     R.string.service_free_mem, freeMem + " MB"));
+	    if (mRamText != null)
             mRamText.setText(getResources().getString(
                     R.string.memory));
             float totalMem = mTotalMemory;
