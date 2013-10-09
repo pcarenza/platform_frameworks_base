@@ -115,6 +115,20 @@ public class GestureCatcherView extends LinearLayout{
             });
     }
 
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        mSettingsObserver.observe();
+        updateSettings();
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        mContext.getContentResolver().unregisterContentObserver(mSettingsObserver);
+        super.onDetachedFromWindow();
+    }
+
     public void setSwapXY(boolean swap) {
         mSwapXY = swap;
         updateLayout();

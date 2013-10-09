@@ -62,6 +62,8 @@ public class SignalClusterView
 
     Handler mHandler;
 
+    private SettingsObserver mSettingsObserver;
+
     public SignalClusterView(Context context) {
         this(context, null);
     }
@@ -72,6 +74,7 @@ public class SignalClusterView
 
     public SignalClusterView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+	mSettingsObserver = new SettingsObserver(mHandler);
     }
 
     public void setNetworkController(NetworkController nc) {
@@ -96,8 +99,7 @@ public class SignalClusterView
 
         mHandler = new Handler();
 
-        SettingsObserver settingsObserver = new SettingsObserver(mHandler);
-        settingsObserver.observe();
+        mSettingsObserver.observe();
 
         apply();
     }
@@ -114,6 +116,8 @@ public class SignalClusterView
         mMobileText     = null;
         mSpacer         = null;
         mAirplane       = null;
+
+	mContext.getContentResolver().unregisterContentObserver(mSettingsObserver);
 
         super.onDetachedFromWindow();
     }
@@ -214,6 +218,7 @@ public class SignalClusterView
             mMobileType.setImageResource(mMobileTypeId);
 
             mMobileGroup.setContentDescription(mMobileTypeDescription + " " + mMobileDescription);
+	    mMobileGroup.setVisibility(View.VISIBLE);
             if (showingSignalText && !mIsAirplaneMode) {
                 mMobile.setVisibility(View.GONE);
                 mMobileText.setVisibility(View.VISIBLE);

@@ -336,21 +336,7 @@ public class AppOpsService extends IAppOpsService.Stub {
                     if (mode == AppOpsManager.MODE_ALLOWED) {
                         // If going into the default mode, prune this op
                         // if there is nothing else interesting in it.
-                        if (op.time == 0 && op.rejectTime == 0) {
-                            Ops ops = getOpsLocked(uid, packageName, false);
-                            if (ops != null) {
-                                ops.remove(op.op);
-                                if (ops.size() <= 0) {
-                                    HashMap<String, Ops> pkgOps = mUidOps.get(uid);
-                                    if (pkgOps != null) {
-                                        pkgOps.remove(ops.packageName);
-                                        if (pkgOps.size() <= 0) {
-                                            mUidOps.remove(uid);
-                                        }
-                                    }
-                                }
-                            }
-                        }
+			pruneOp(op, uid, packageName);
                     }
                     scheduleWriteNowLocked();
                 }

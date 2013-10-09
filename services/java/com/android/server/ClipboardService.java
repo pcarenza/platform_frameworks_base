@@ -161,24 +161,32 @@ public class ClipboardService extends IClipboard.Stub {
             checkDataOwnerLocked(clip, Binder.getCallingUid());
             clearActiveOwnersLocked();
             PerUserClipboard clipboard = getClipboard();
+	    final long ident  = Binder.clearCallingIdentity();
             clipboard.primaryClip = clip;
             final int n = clipboard.primaryClipListeners.beginBroadcast();
-            for (int i = 0; i < n; i++) {
-                try {
-                    ListenerInfo li = (ListenerInfo)
-                            clipboard.primaryClipListeners.getBroadcastCookie(i);
-                    if (mAppOps.checkOpNoThrow(AppOpsManager.OP_READ_CLIPBOARD, li.mUid,
-                            li.mPackageName) == AppOpsManager.MODE_ALLOWED) {
-                        clipboard.primaryClipListeners.getBroadcastItem(i)
-                                .dispatchPrimaryClipChanged();
+            try {
+                for (int i = 0; i < n; i++) {
+                    try {
+                        ListenerInfo li = (ListenerInfo)
+                                clipboard.primaryClipListeners.getBroadcastCookie(i);
+                        if (mAppOps.checkOpNoThrow(AppOpsManager.OP_READ_CLIPBOARD, li.mUid,
+                                li.mPackageName) == AppOpsManager.MODE_ALLOWED) {
+                            clipboard.primaryClipListeners.getBroadcastItem(i)
+                                    .dispatchPrimaryClipChanged();
+                        }
+                    } catch (RemoteException e) {
+                        // The RemoteCallbackList will take care of removing
+                        // the dead object for us.
+
                     }
-                } catch (RemoteException e) {
 
                     // The RemoteCallbackList will take care of removing
                     // the dead object for us.
                 }
+            } finally {
+                clipboard.primaryClipListeners.finishBroadcast();
+                Binder.restoreCallingIdentity(ident);
             }
-            clipboard.primaryClipListeners.finishBroadcast();
         }
     }
     

@@ -883,10 +883,6 @@ public class PhoneStatusBar extends BaseStatusBar {
             (android.view.WindowManager.LayoutParams) mNavigationBarView.getLayoutParams();
         lp.flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
         mWindowManager.updateViewLayout(mNavigationBarView, lp);
-        // reset time for autohide NavBar if necessary
-        if (mNavBarAutoHide && mAutoHideTimeOut > 0) {
-            mHandler.removeCallbacks(delayHide); // reset
-            mHandler.postDelayed(delayHide,mAutoHideTimeOut);
         }
     }
 
@@ -897,6 +893,12 @@ public class PhoneStatusBar extends BaseStatusBar {
             (android.view.WindowManager.LayoutParams) mNavigationBarView.getLayoutParams();
         lp.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
         mWindowManager.updateViewLayout(mNavigationBarView, lp);
+        // reset time for autohide NavBar if necessary
+        if (mNavBarAutoHide && mAutoHideTimeOut > 0) {
+            mHandler.removeCallbacks(delayHide); // reset
+            mHandler.postDelayed(delayHide,mAutoHideTimeOut);
+        }
+
     }
 
     protected int getStatusBarGravity() {
@@ -1080,13 +1082,6 @@ public class PhoneStatusBar extends BaseStatusBar {
         if (DEBUG) Slog.v(TAG, "addNavigationBar: about to add " + mNavigationBarView);
         if (mNavigationBarView == null) return;
         
-        CustomTheme newTheme = mContext.getResources().getConfiguration().customTheme;
-        if (newTheme != null &&
-                (mCurrentTheme == null || !mCurrentTheme.equals(newTheme))) {
-            // Nevermind, this will be re-created
-            return;
-        }
-
         prepareNavigationBarView();
 
 		if (!mNavBarAutoHide) {
@@ -1100,6 +1095,13 @@ public class PhoneStatusBar extends BaseStatusBar {
 
     private void repositionNavigationBar() {
         if (mNavigationBarView == null) return;
+        CustomTheme newTheme = mContext.getResources().getConfiguration().customTheme;
+        if (newTheme != null &&
+                (mCurrentTheme == null || !mCurrentTheme.equals(newTheme))) {
+            // Nevermind, this will be re-created
+            return;
+        }
+
 
         prepareNavigationBarView();
 
@@ -3026,7 +3028,6 @@ public class PhoneStatusBar extends BaseStatusBar {
             mContext.getResources().getConfiguration().uiInvertedMode;
 
         // detect theme change.
-        CustomTheme newTheme = res.getConfiguration().customTheme;
         if ((newTheme != null &&
                 (mCurrentTheme == null || !mCurrentTheme.equals(newTheme)))
             || uiInvertedMode != mCurrUiInvertedMode) {
@@ -3322,7 +3323,7 @@ public class PhoneStatusBar extends BaseStatusBar {
             if(ent != null
                     && ent.notification != null
                     && notificationIsForCurrentUser(ent.notification)) {
-                switch(ent.notification.id) {
+                switch(ent.notification.getId()) {
                     // ignore adb icon
                     case com.android.internal.R.drawable.stat_sys_adb:
                         continue;

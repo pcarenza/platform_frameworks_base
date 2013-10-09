@@ -387,6 +387,11 @@ public final class ObexHelper {
                 if (nullOut) {
                     headImpl.setHeader(HeaderSet.NAME, null);
                 }
+            } else if (headImpl.getEmptyNameHeader()) {
+                out.write((byte) HeaderSet.NAME);
+                lengthArray[0] = (byte) 0x00;
+                lengthArray[1] = (byte) 0x03;
+                out.write(lengthArray);
             }
 
             // Type Header

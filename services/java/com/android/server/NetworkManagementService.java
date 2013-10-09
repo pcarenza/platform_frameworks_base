@@ -52,6 +52,7 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.SystemProperties;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Slog;
 import android.util.SparseBooleanArray;
@@ -72,14 +73,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Inet4Address;
+import java.net.Inte6Address;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import java.util.concurrent.CountDownLatch;
@@ -114,6 +118,7 @@ public class NetworkManagementService extends INetworkManagementService.Stub
         public static final int TetherInterfaceListResult = 111;
         public static final int TetherDnsFwdTgtListResult = 112;
         public static final int TtyListResult             = 113;
+	public static final int CommandOkay		  = 200;
 
         public static final int TetherStatusResult        = 210;
         public static final int IpFwdStatusResult         = 211;
@@ -125,6 +130,7 @@ public class NetworkManagementService extends INetworkManagementService.Stub
         public static final int TetheringStatsResult      = 221;
         public static final int DnsProxyQueryResult       = 222;
         public static final int ClatdStatusResult         = 223;
+	public static final int V6RtrAdvResult		  = 224;
 
         public static final int InterfaceChange           = 600;
         public static final int BandwidthControl          = 601;
@@ -482,6 +488,39 @@ public class NetworkManagementService extends INetworkManagementService.Stub
                     mConnector.executeForList("interface", "list"), InterfaceListResult);
         } catch (NativeDaemonConnectorException e) {
             throw e.rethrowAsParcelableException();
+        }
+    }
+
+     @Override
+    public void addUpstreamV6Interface(String iface) throws IllegalStateException {
+        mContext.enforceCallingOrSelfPermission(
+                android.Manifest.permission.ACCESS_NETWORK_STATE, "NetworkManagementService");
+
+        Slog.d(TAG, "addUpstreamInterface("+ iface + ")");
+        try {
+            final Command cmd = new Command("tether", "interface", "add_upstream");
+            cmd.appendArg(iface);
+            mConnector.execute(cmd);
+        } catch (NativeDaemonConnectorException e) {
+            throw new IllegalStateException("Cannot add upstream interface");
+        }
+    }
+
+    @Override
+    public void removeUpstreamV6Interface(String iface) throws IllegalStateException {
+        mContext.enforceCallingOrSelfPermission(
+                android.Manifest.permission.ACCESS_NETWORK_STATE, "NetworkManagementService");
+
+        Slog.d(TAG, "removeUpstreamInterface(" + iface + ")");
+
+        try {
+            final Command cmd = new Command("tether", "interface", "add_upstream");
+            cmd.appendArg(iface);
+            mConnector.execute(cmd);
+
+            mConnector.execute(cmd);
+        } catch (NativeDaemonConnectorException e) {
+            throw new IllegalStateException("Cannot remove upstream interface");
         }
     }
 
@@ -990,11 +1029,6 @@ public class NetworkManagementService extends INetworkManagementService.Stub
                         com.android.internal.R.bool.config_wifiApFirmwareReload)) {
                 wifiFirmwareReload(wlanIface, "AP");
             }
-            if (mContext.getResources().getBoolean(
-                        com.android.internal.R.bool.config_wifiApStartInterface)) {
-                mConnector.execute("softap", "start", wlanIface);
-            }
-//            wifiFirmwareReload(wlanIface, "AP");
             if (wifiConfig == null) {
                 mConnector.execute("softap", "set", wlanIface);
             } else {
@@ -1004,6 +1038,87 @@ public class NetworkManagementService extends INetworkManagementService.Stub
             mConnector.execute("softap", "startap");
         } catch (NativeDaemonConnectorException e) {
             throw e.rethrowAsParcelableException();
+        }
+    }
+
+     /*Set SAP Channel Range*/
+    public void setChannelRange(int startchannel, int endchannel, int band)
+            throws IllegalStateException {
+        mContext.enforceCallingOrSelfPermission(
+           android.Manifest.permission.CHANGE_NETWORK_STATE, "NetworkManagementService");
+        mContext.enforceCallingOrSelfPermission(
+           android.Manifest.permission.CHANGE_WIFI_STATE, "NetworkManagementService");
+        try {
+            Slog.d(TAG, "Set SAP Channel Range");
+            mConnector.execute(
+            "softap", "qccmd", "set", "setchannelrange=", startchannel, " ", endchannel, " ", band);
+        } catch (NativeDaemonConnectorException e) {
+              throw new IllegalStateException(
+                   "Error communicating to native daemon to set channel range", e);
+        }
+    }
+
+     /*Get SAP Operating Channel*/
+    public int getSapOperatingChannel() throws IllegalStateException{
+        mContext.enforceCallingOrSelfPermission(
+            android.Manifest.permission.CHANGE_NETWORK_STATE, "NetworkManagementService");
+        mContext.enforceCallingOrSelfPermission(
+            android.Manifest.permission.CHANGE_WIFI_STATE, "NetworkManagementService");
+        int channel=0;
+        try {
+            final NativeDaemonEvent OperChanResp;
+            Slog.d(TAG, "getSapOperatingChannel");
+            OperChanResp = mConnector.execute("softap", "qccmd", "get", "channel");
+            Slog.d(TAG, "getSapOperatingChannel--OperChanResp" + OperChanResp);
+
+            //Resp Pattern : 200 8 success channel=6
+            final StringTokenizer tok = new StringTokenizer(OperChanResp.getMessage());
+            tok.nextToken();
+            String temp = (tok.hasMoreTokens()) ? tok.nextToken() : null;
+            if (temp != null) {
+                 final StringTokenizer tok1 = new StringTokenizer(temp, "=");
+                 String temp1 = (tok1.hasMoreTokens()) ? tok1.nextToken() : null;
+                 String temp2 = (tok1.hasMoreTokens()) ? tok1.nextToken() : null;
+                 if (temp2 != null)
+                      channel = Integer.parseInt(temp2);
+            }
+            Slog.d(TAG, "softap qccmd get channel =" + channel);
+            return channel;
+        } catch (NativeDaemonConnectorException e) {
+            throw new IllegalStateException(
+                     "Error communicating to native daemon to getSapOperatingChannel", e);
+        }
+    }
+
+     /*Get SAP Auto Channel Selection*/
+    public int getSapAutoChannelSelection() throws IllegalStateException{
+        mContext.enforceCallingOrSelfPermission(
+            android.Manifest.permission.CHANGE_NETWORK_STATE, "NetworkManagementService");
+        mContext.enforceCallingOrSelfPermission(
+            android.Manifest.permission.CHANGE_WIFI_STATE, "NetworkManagementService");
+        int autochannel=0;
+        try {
+            final NativeDaemonEvent OperChanResp;
+            Slog.d(TAG, "getSapAutoChannelSelection");
+            OperChanResp = mConnector.execute("softap", "qccmd", "get", "autochannel");
+
+            //Resp Pattern : 200 9 success autochannel=0
+            final StringTokenizer tok = new StringTokenizer(OperChanResp.getMessage());
+            tok.nextToken();
+            String temp = (tok.hasMoreTokens()) ? tok.nextToken() : null;
+            if (temp != null) {
+                 final StringTokenizer tok1 = new StringTokenizer(temp, "=");
+                 String temp1 = (tok1.hasMoreTokens()) ? tok1.nextToken() : null;
+                 String temp2 = (tok1.hasMoreTokens()) ? tok1.nextToken() : null;
+                 if (temp2 != null)
+                      autochannel = Integer.parseInt(temp2);
+            }
+            Slog.d(TAG, "getSapAutoChannelSelection--OperChanResp" + OperChanResp);
+            Slog.d(TAG, "softap qccmd get autochannel =" + autochannel);
+            return autochannel;
+        } catch (NativeDaemonConnectorException e) {
+              throw new IllegalStateException(
+                  "Error communicating to native daemon to getSapOperatingChannel", e);
         }
     }
 
@@ -1560,4 +1675,140 @@ public class NetworkManagementService extends INetworkManagementService.Stub
 
         pw.print("Firewall enabled: "); pw.println(mFirewallEnabled);
     }
+
+
+    @Override
+    public boolean replaceSrcRoute(String iface, byte[] ip, byte[] gateway, int routeId) {
+        mContext.enforceCallingOrSelfPermission(CONNECTIVITY_INTERNAL, TAG);
+        final NativeDaemonEvent rsp;
+        InetAddress ipAddr;
+
+        if (TextUtils.isEmpty(iface)) {
+            Log.e(TAG,"route cmd failed - iface is invalid");
+            return false;
+        }
+
+        try {
+            ipAddr = InetAddress.getByAddress(ip);
+        } catch (UnknownHostException e) {
+            Log.e(TAG,"route cmd failed because of unknown src ip", e);
+            return false;
+        }
+
+        final Command cmd = new Command("route", "replace", "src");
+
+        if (ipAddr instanceof Inet4Address)
+            cmd.appendArg("v4");
+        else
+            cmd.appendArg("v6");
+
+        cmd.appendArg(iface);
+        cmd.appendArg(ipAddr.getHostAddress());
+        cmd.appendArg(routeId);
+
+        try {
+            InetAddress gatewayAddr = InetAddress.getByAddress(gateway);
+            // check validity of gw address - add route without gw if its invalid
+            if ((ipAddr instanceof Inet4Address && gatewayAddr instanceof Inet4Address) ||
+                    (ipAddr instanceof Inet6Address && gatewayAddr instanceof Inet6Address))
+            {
+                cmd.appendArg(gatewayAddr.getHostAddress());
+            }
+        } catch (UnknownHostException e) {
+            Log.w(TAG,"route cmd did not obtain valid gw; adding route without gw");
+        }
+        try {
+            rsp = mConnector.execute(cmd);
+        } catch (NativeDaemonConnectorException e) {
+            Log.w(TAG,"route cmd failed: ", e);
+            return false;
+        }
+        if (DBG) {
+            Slog.v(TAG, "replace src route response is " + rsp.toString());
+        }
+        return true;
+    }
+
+    @Override
+    public boolean delSrcRoute(byte[] ip, int routeId) {
+        mContext.enforceCallingOrSelfPermission(CONNECTIVITY_INTERNAL, TAG);
+        final NativeDaemonEvent rsp;
+        InetAddress ipAddr;
+
+        try {
+            ipAddr = InetAddress.getByAddress(ip);
+        } catch (UnknownHostException e) {
+            Log.e(TAG,"route cmd failed due to invalid src ip", e);
+            return false; //cannot remove src route without valid src prefix
+        }
+
+        final Command cmd = new Command("route", "del", "src");
+
+        if (ipAddr instanceof Inet4Address) {
+            cmd.appendArg("v4");
+        } else {
+            cmd.appendArg("v6");
+        }
+
+        cmd.appendArg(routeId);
+
+        try {
+            rsp = mConnector.execute(cmd);
+        } catch (NativeDaemonConnectorException e) {
+            Log.w(TAG,"route cmd failed: ", e);
+            return false;
+        }
+        if (DBG) {
+            Slog.v(TAG, "del src route response is " + rsp.toString());
+        }
+        return true;
+    }
+
+    @Override
+    public boolean addRouteWithMetric(String iface, int metric, RouteInfo route) {
+        mContext.enforceCallingOrSelfPermission(CONNECTIVITY_INTERNAL, TAG);
+        final NativeDaemonEvent rsp;
+
+        if (TextUtils.isEmpty(iface)) {
+            Log.e(TAG,"route cmd failed - iface is invalid");
+            return false;
+        }
+
+        final Command cmd = new Command("route", "add");
+        if (route.isDefaultRoute()) {
+            cmd.appendArg("def");
+        } else {
+            cmd.appendArg("dst");
+        }
+
+        InetAddress gateway = route.getGateway();
+        if (gateway instanceof Inet4Address) {
+            cmd.appendArg("v4");
+        } else {
+            cmd.appendArg("v6");
+        }
+
+        cmd.appendArg(iface);
+        cmd.appendArg(metric);
+
+        if (route.isHostRoute()) {
+            cmd.appendArg(route.getDestination().getAddress().getHostAddress());
+        }
+
+        cmd.appendArg(gateway.getHostAddress());
+
+        try {
+            rsp = mConnector.execute(cmd);
+        } catch (NativeDaemonConnectorException e) {
+            Log.w(TAG,"route cmd failed: ", e);
+            return false;
+        }
+
+        if (DBG) {
+            Slog.v(TAG, "add metric route response is " + rsp.toString());
+        }
+        return true;
+    }
+
+
 }

@@ -188,6 +188,16 @@ interface INetworkManagementService
      */
     void disableNat(String internalInterface, String externalInterface);
 
+     /**
+     * Add an upstream IPv6 interface
+     */
+    void addUpstreamV6Interface(String iface);
+
+    /**
+     * Remove an upstream IPv6 interface
+     */
+    void removeUpstreamV6Interface(String iface);
+
     /**
      ** PPPD
      **/
@@ -367,4 +377,43 @@ interface INetworkManagementService
      * Determine whether the clatd (464xlat) service has been started
      */
     boolean isClatdStarted();
+
+   /**
+    ** Policy Routing
+    **/
+
+   /**
+    * Replaces a prexisting identical route with the new metric specified.
+    * Adds a new route if none existed before.
+    */
+   boolean addRouteWithMetric(String iface, int metric, in RouteInfo route);
+
+   /**
+    * Replaces a source policy route for the given iface in a custom routing
+    * table denoted by routeId, if it already exists.
+    * Adds a new route if it did not exist.
+    */
+   boolean replaceSrcRoute(String iface, in byte[] ip, in byte[] gateway, int routeId);
+
+   /**
+    * Deletes a source policy route for the given route identifier and source
+    * address from a custom routing table denoted by routeId
+    */
+   boolean delSrcRoute(in byte[] ip, int routeId);
+
+   /**
+     * Set SAP Channel Range
+    */
+    void setChannelRange(int startchannel, int endchannel, int band);
+
+    /**
+     * Get SAP Current Operating Channel
+    */
+    int getSapOperatingChannel();
+
+    /**
+     * Get SAP Auto Channel Selection
+    */
+    int getSapAutoChannelSelection();
+
 }

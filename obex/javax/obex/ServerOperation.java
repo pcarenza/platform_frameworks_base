@@ -367,7 +367,7 @@ public final class ServerOperation implements Operation, BaseStream {
                  */
                 if ((finalBitSet) || (mPrivateOutput.isClosed())) {
                     if (mEndofBody) {
-                        out.write((byte)0x49);
+                        out.write(0x49);
                         bodyLength += 3;
                         out.write((byte)(bodyLength >> 8));
                         out.write((byte)bodyLength);
@@ -384,17 +384,16 @@ public final class ServerOperation implements Operation, BaseStream {
             }
         }
 
-        if ((finalBitSet) && (type == ResponseCodes.OBEX_HTTP_OK) && (orginalBodyLength <= 0)) {
-            if (mEndofBody) {
-               out.write(0x49);
-               orginalBodyLength = 3;
-               out.write((byte)(orginalBodyLength >> 8));
-               out.write((byte)orginalBodyLength);
-           }
-        }
-
-        mResponseSize = 3;
-        mParent.sendResponse(type, out.toByteArray());
+            if ((finalBitSet) && (type == ResponseCodes.OBEX_HTTP_OK) && (orginalBodyLength <= 0)) {
+                if (mEndofBody) {
+                    out.write(0x49);
+                    orginalBodyLength = 3;
+                    out.write((byte)(orginalBodyLength >> 8));
+                    out.write((byte)orginalBodyLength);
+                }
+            }
+            mResponseSize = 3;
+            mParent.sendResponse(type, out.toByteArray());
 
         if (type == ResponseCodes.OBEX_HTTP_CONTINUE) {
             int headerID = mInput.read();

@@ -502,10 +502,13 @@ public abstract class BaseStatusBar extends SystemUI implements
             } catch (NameNotFoundException ex) {
                 Slog.e(TAG, "Failed looking up ApplicationInfo for " + sbn.getPackageName(), ex);
             }
-            if (version > 0 && version < Build.VERSION_CODES.GINGERBREAD) {
-                content.setBackgroundResource(R.drawable.notification_row_legacy_bg);
-            } else {
-                content.setBackgroundResource(com.android.internal.R.drawable.notification_bg);
+            try {
+                if (version > 0 && version < Build.VERSION_CODES.GINGERBREAD) {
+                    content.setBackgroundResource(R.drawable.notification_row_legacy_bg);
+                } else {
+                    content.setBackgroundResource(com.android.internal.R.drawable.notification_bg);
+                }
+            } catch (NotFoundException ignore) {
             }
         }
     }

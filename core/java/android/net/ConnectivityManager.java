@@ -582,6 +582,29 @@ public class ConnectivityManager {
         }
     }
 
+     /**
+     * Returns details about the Provisioning or currently active default data network. When
+     * connected, this network is the default route for outgoing connections.
+     * You should always check {@link NetworkInfo#isConnected()} before initiating
+     * network traffic. This may return {@code null} when there is no default
+     * network.
+     *
+     * @return a {@link NetworkInfo} object for the current default network
+     *        or {@code null} if no network default network is currently active
+     *
+     * <p>This method requires the call to hold the permission
+     * {@link android.Manifest.permission#ACCESS_NETWORK_STATE}.
+     *
+     * {@hide}
+     */
+    public NetworkInfo getProvisioningOrActiveNetworkInfo() {
+        try {
+            return mService.getProvisioningOrActiveNetworkInfo();
+        } catch (RemoteException e) {
+            return null;
+        }
+    }
+
     /**
      * Returns the IP information for the current default network.
      *

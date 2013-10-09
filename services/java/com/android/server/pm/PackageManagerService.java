@@ -211,6 +211,7 @@ public class PackageManagerService extends IPackageManager.Stub {
     private static final String INSTALL_PACKAGE_SUFFIX = "-";
 
     private static final int THEME_MAMANER_GUID = 1300;
+    private static final int THEME_MANAGER_GUID = 1300;
 
     static final int SCAN_MONITOR = 1<<0;
     static final int SCAN_NO_DEX = 1<<1;

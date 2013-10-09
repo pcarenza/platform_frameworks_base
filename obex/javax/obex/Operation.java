@@ -174,10 +174,10 @@ public interface Operation {
     OutputStream openOutputStream() throws IOException;
 
     DataOutputStream openDataOutputStream() throws IOException;
+ 
+    void close() throws IoException;
 
     void noEndofBody();
-
-    void close() throws IOException;
 
     int getMaxPacketSize();
 }

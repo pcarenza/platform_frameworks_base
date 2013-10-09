@@ -27,7 +27,7 @@ import android.os.UserHandle;
  */
 public class StatusBarNotification implements Parcelable {
     private final String pkg;
-    public final int id;
+    private final int id;
     private final String tag;
 
     private final int uid;

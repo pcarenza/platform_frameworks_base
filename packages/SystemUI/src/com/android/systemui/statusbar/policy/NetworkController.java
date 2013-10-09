@@ -1600,6 +1600,9 @@ public class NetworkController extends BroadcastReceiver {
                 Settings.System.STATUSBAR_SIGNAL_SHOW_4G_FOR_LTE,
                 mContext.getResources().getBoolean(R.bool.config_show4GForLTE)));
         updateTelephonySignalStrength();
+	updateDataNetType();
+	updateDataIcon();
+	refreshViews();
     }
 
 }

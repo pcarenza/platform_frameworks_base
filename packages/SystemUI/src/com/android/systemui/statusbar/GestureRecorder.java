@@ -242,6 +242,14 @@ public class GestureRecorder {
             } catch (IOException e) {
                 Slog.e(TAG, String.format("Couldn't write gestures to %s", mLogfile), e);
                 mLastSaveLen = -1;
+            } finally {
+                if (w != null) {
+                    try {
+                        w.close();
+                    } catch (IOException ignored) {
+                    }
+                }
+
             }
         }
     }

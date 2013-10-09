@@ -23,6 +23,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
+import android.widget.FrameLayout;
 
 import com.android.internal.util.aokp.BackgroundAlphaColorDrawable;
 import com.android.systemui.statusbar.NavigationBarView;
@@ -125,16 +126,25 @@ public class TransparencyManager {
         }
 
         final float alpha = a;
+        ValueAnimator anim = null;
+        if (v.getBackground() instanceof BackgroundAlphaColorDrawable) {
+            final BackgroundAlphaColorDrawable bg = (BackgroundAlphaColorDrawable) v
+                    .getBackground();
+            anim = ValueAnimator.ofObject(new ArgbEvaluator(), info.color,
+                    BackgroundAlphaColorDrawable.applyAlphaToColor(bg.getBgColor(), alpha));
+            anim.addUpdateListener(new AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    info.color = (Integer) animation.getAnimatedValue();
+                    bg.setColor(info.color);
+                }
+            });
+        } else {
+            // custom image is set by the theme, let's just apply the alpha if we can.
+            v.getBackground().setAlpha(BackgroundAlphaColorDrawable.floatAlphaToInt(alpha));
+            return null;
+        }
 
-        final BackgroundAlphaColorDrawable bg = (BackgroundAlphaColorDrawable) v.getBackground();
-        ValueAnimator anim = ValueAnimator.ofObject(new ArgbEvaluator(), info.color, BackgroundAlphaColorDrawable.applyAlphaToColor(info.color, alpha));
-        anim.addUpdateListener(new AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                info.color = (Integer)animation.getAnimatedValue();
-                bg.setColor(info.color);
-            }
-        });
         anim.addListener(new AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
@@ -170,7 +180,7 @@ public class TransparencyManager {
             sbAnim = createAnimation(mStatusbarInfo, mStatusbar);
             anims++;
         }
-        if (anims > 1) {
+        if (anims >1) {
             AnimatorSet set = new AnimatorSet();
             set.playTogether(navAnim, sbAnim);
             set.start();

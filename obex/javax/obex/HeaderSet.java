@@ -181,6 +181,8 @@ public final class HeaderSet {
 
     private String mName; // null terminated Unicode text string
 
+    private boolean mEmptyName;
+
     private String mType; // null terminated ASCII text string
 
     private Long mLength; // 4 byte unsigend integer
@@ -234,6 +236,26 @@ public final class HeaderSet {
         mRandom = new SecureRandom();
     }
 
+     /**
+     * Sets flag for special "value" of NAME header which should be empty. This
+     * is not the same as NAME header with empty string in which case it will
+     * have length of 5 bytes. It should be 3 bytes with only header id and
+     * length field.
+     */
+    public void setEmptyNameHeader() {
+        mName = null;
+        mEmptyName = true;
+    }
+
+    /**
+     * Gets flag for special "value" of NAME header which should be empty. See
+     * above.
+     */
+    public boolean getEmptyNameHeader() {
+        return mEmptyName;
+    }
+
+
     /**
      * Sets the value of the header identifier to the value provided. The type
      * of object must correspond to the Java type defined in the description of
@@ -269,6 +291,7 @@ public final class HeaderSet {
                 if ((headerValue != null) && (!(headerValue instanceof String))) {
                     throw new IllegalArgumentException("Name must be a String");
                 }
+		mEmptyName = false;
                 mName = (String)headerValue;
                 break;
             case TYPE:
@@ -501,7 +524,10 @@ public final class HeaderSet {
      *         the operation or the connection has been closed
      */
     public int[] getHeaderList() throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = null;
+        try{
+            out = new ByteArrayOutputStream();
+
 
         if (mCount != null) {
             out.write(COUNT);
@@ -567,18 +593,18 @@ public final class HeaderSet {
         byte[] headers = out.toByteArray();
         out.close();
 
-        if ((headers == null) || (headers.length == 0)) {
-            return null;
-        }
-
-        int[] result = new int[headers.length];
-        for (int i = 0; i < headers.length; i++) {
-            // Convert the byte to a positive integer.  That is, an integer
-            // between 0 and 256.
-            result[i] = headers[i] & 0xFF;
-        }
-
-        return result;
+            int[] result = new int[headers.length];
+            for (int i = 0; i < headers.length; i++) {
+                // Convert the byte to a positive integer.  That is, an integer
+                // between 0 and 256.
+                result[i] = headers[i] & 0xFF;
+            }
+            return result;
+        } finally {
+            if (out != null) {
+                out.close();
+            }
+    	}
     }
 
     /**

@@ -22,7 +22,7 @@ import android.annotation.SdkConstant.SdkConstantType;
 import android.app.ActivityManagerNative;
 import android.app.SearchManager;
 import android.app.WallpaperManager;
-
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -716,6 +716,7 @@ public final class Settings {
      * Example: The {@link #ACTION_ADD_ACCOUNT} intent restricts the account types available based
      * on the authority given.
      */
+    public static final String EXTRA_ACCOUNT_TYPES = "account_types";
     public static final String EXTRA_AUTHORITIES =
             "authorities";
 
@@ -1055,7 +1056,6 @@ public final class Settings {
          */
         public synchronized static String getString(ContentResolver resolver,
             String name, String defaultValue) {
-            
             String value = getString(resolver, name);
             return value == null ? defaultValue: value;
         }
@@ -1904,6 +1904,13 @@ public final class Settings {
          */
         public static final String AUTO_BRIGHTNESS_RESPONSIVENESS = "auto_brightness_responsiveness";
 
+        /**
+         * Whether to enable adjustment of automatic brightness adjustment
+         * to sunrise and sunset.
+         * @hide
+         */
+        public static final String AUTO_BRIGHTNESS_TWILIGHT_ADJUSTMENT = "auto_brightness_twilight_adjustment";
+
          /**
           * Determines which streams are affected by mute. The
           * stream type's bit should be set to 1 if it should be muted when a mute request
@@ -2028,7 +2035,56 @@ public final class Settings {
             "notifications_use_ring_volume";
 
         /**
-         * Whether silent mode should allow vibration feedback. This is used
+         * Whether the blacklisting feature for phone calls is enabled
+         * @hide
+         */
+        public static final String PHONE_BLACKLIST_ENABLED = "phone_blacklist_enabled";
+
+        /**
+         * Whether a notification should be shown when a call/message is blocked
+         * @hide
+         */
+        public static final String PHONE_BLACKLIST_NOTIFY_ENABLED = "phone_blacklist_notify_enabled";
+
+        /**
+         * Whether the blacklisting feature for phone calls from private numbers is enabled
+         * @hide
+         */
+        public static final String PHONE_BLACKLIST_PRIVATE_NUMBER_MODE = "phone_blacklist_private_number_mode";
+
+        /**
+         * Whether the blacklisting feature for phone calls from private numbers is enabled
+         * @hide
+         */
+        public static final String PHONE_BLACKLIST_UNKNOWN_NUMBER_MODE = "phone_blacklist_private_number_mode";
+
+        /**
+         * Constants to be used for {@link PHONE_BLACKLIST_PRIVATE_NUMBER_MODE} and
+         * {@link PHONE_BLACKLIST_UNKNOWN_NUMBER_MODE}.
+         * @hide
+         */
+        public static final int BLACKLIST_DO_NOT_BLOCK = 0;
+        /**
+         * @hide
+         */
+        public static final int BLACKLIST_BLOCK = 1;
+        /**
+         * @hide
+         */
+        public static final int BLACKLIST_PHONE_SHIFT = 0;
+        /**
+         * @hide
+         */
+        public static final int BLACKLIST_MESSAGE_SHIFT = 4;
+
+        /**
+         * Whether the regex blacklisting feature for phone calls is enabled
+         * @hide
+         */
+        public static final String PHONE_BLACKLIST_REGEX_ENABLED = "phone_blacklist_regex_enabled";
+
+        /*
+         *  Whether silent mode should allow vibration feedback. This is used
          * internally in AudioService and the Sound settings activity to
          * coordinate decoupling of vibrate and silent modes. This setting
          * will likely be removed in a future release with support for

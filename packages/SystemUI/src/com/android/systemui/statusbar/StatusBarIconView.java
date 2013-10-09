@@ -55,7 +55,7 @@ public class StatusBarIconView extends AnimatedImageView {
     private String mNumberText;
     private Notification mNotification;
     private boolean mShowNotificationCount;
-    private SettingsObserver mObserver;
+    private GlobalSettingsObserver mObserver;
 
     public StatusBarIconView(Context context, String slot, Notification notification) {
         super(context);
@@ -74,7 +74,7 @@ public class StatusBarIconView extends AnimatedImageView {
                 Settings.System.STATUSBAR_NOTIF_COUNT, 0) == 1;
         setContentDescription(notification);
         
-        mObserver = new SettingsObserver(new Handler());
+	mObserver = GlobalSettingsObserver.getInstance(context);
 
         // We do not resize and scale system icons (on the right), only notification icons (on the
         // left).
@@ -263,7 +263,7 @@ public class StatusBarIconView extends AnimatedImageView {
         super.onAttachedToWindow();
 
         if (mObserver != null) {
-            mObserver.observe();
+	    mObserver.attach(this);
         }
     }
 
@@ -272,7 +272,7 @@ public class StatusBarIconView extends AnimatedImageView {
         super.onDetachedFromWindow();
 
         if (mObserver != null) {
-            mObserver.unobserve();
+	    mObserver.detach(this);
         }
     }
 
@@ -330,9 +330,35 @@ public class StatusBarIconView extends AnimatedImageView {
             + " notification=" + mNotification + ")";
     }
 
-    class SettingsObserver extends ContentObserver {	
-        SettingsObserver(Handler handler) {
-            super(handler);	
+    static class GlobalSettingsObserver extends ContentObserver {
+        private static GlobalSettingsObserver sInstance;
+        private ArrayList<StatusBarIconView> mIconViews = new ArrayList<StatusBarIconView> ();
+        private Context mContext;
+
+        GlobalSettingsObserver(Handler handler, Context context) {
+            super(handler);
+            mContext = context.getApplicationContext();
+        }
+
+        static GlobalSettingsObserver getInstance(Context context) {
+            if (sInstance == null) {
+                sInstance = new GlobalSettingsObserver(new Handler(), context);
+            }
+            return sInstance;
+        }
+
+        void attach(StatusBarIconView sbiv) {
+            if (mIconViews.isEmpty()) {
+                observe();
+            }
+            mIconViews.add(sbiv);
+        }
+
+        void detach(StatusBarIconView sbiv) {
+            mIconViews.remove(sbiv);
+            if (mIconViews.isEmpty()) {
+                unobserve();
+            }
         }
 
         void observe() {	
@@ -347,12 +373,12 @@ public class StatusBarIconView extends AnimatedImageView {
 
         @Override
         public void onChange(boolean selfChange) {
-        	setAlpha(Settings.System.getInt(mContext.getContentResolver(),
-        		Settings.System.STATUS_BAR_NOTIF_ICON_OPACITY, 140));
-            mShowNotificationCount = Settings.System.getInt(	
-                    mContext.getContentResolver(),
-                    Settings.System.STATUSBAR_NOTIF_COUNT, 0) == 1;	
-            set(mIcon, true);	
+            boolean showIconCount = Settings.System.getInt(mContext.getContentResolver(),
+                    Settings.System.STATUSBAR_NOTIF_COUNT, 0) == 1;
+            for (StatusBarIconView sbiv : mIconViews) {
+                sbiv.mShowNotificationCount = showIconCount;
+                sbiv.set(sbiv.mIcon, true);
+            }
         }
     }
 }

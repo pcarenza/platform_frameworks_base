@@ -202,9 +202,13 @@ public class CaptivePortalTracker extends StateMachine {
             switch (message.what) {
                 case CMD_CONNECTIVITY_CHANGE:
                     info = (NetworkInfo) message.obj;
-                    if (info.isConnected() && isActiveNetwork(info)) {
-                        mNetworkInfo = info;
-                        transitionTo(mDelayedCaptiveCheckState);
+                    if (info.getType() == ConnectivityManager.TYPE_WIFI) {
+                        if (info.isConnected() && isActiveNetwork(info)) {
+                            mNetworkInfo = info;
+                            transitionTo(mDelayedCaptiveCheckState);
+                        }
+                    } else {
+                        log(getName() + " not a wifi connectivity change, ignore");
                     }
                     break;
                 default:

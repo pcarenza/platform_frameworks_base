@@ -51,4 +51,11 @@ public class QuickSettingsTileView extends RelativeLayout {
     public void setContent(int layoutId, LayoutInflater inflater) {
         inflater.inflate(layoutId, this);
     }
+
+
+    @Override
+    public void setVisibility(int vis) {
+        super.setVisibility(vis);
+    }
+
 }
